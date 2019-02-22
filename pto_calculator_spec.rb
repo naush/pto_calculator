@@ -1,6 +1,21 @@
 require 'date'
 require 'business_time'
-# require 'time_difference'
+
+class MonthAccrualStrategy
+  def self.calculate(start_date, end_date, days, on)
+    end_of_month = on == 31
+
+    number_of_accrual_dates = (start_date...end_date).select do |date|
+      if end_of_month
+        date == date.at_end_of_month
+      else
+        date.day == on
+      end
+    end.size
+
+    days * number_of_accrual_dates
+  end
+end
 
 class PtoCalculator
   def self.calculate(options)
@@ -10,15 +25,7 @@ class PtoCalculator
     accrued = 0
 
     if accrual_rule[:period] == :month
-      end_of_month = accrual_rule[:on] == 31
-      number_of_accrual_dates = (start_date...end_date).select do |date|
-        if end_of_month
-          date == date.at_end_of_month
-        else
-          date.day == accrual_rule[:on]
-        end
-      end.size
-      accrued = accrual_rule[:days] * number_of_accrual_dates
+      accrued = MonthAccrualStrategy.calculate(start_date, end_date, accrual_rule[:days], accrual_rule[:on])
     elsif accrual_rule[:period] == :week
       number_of_accrual_dates = (start_date...end_date).select do |date|
         date.send("#{accrual_rule[:on]}?")

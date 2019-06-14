@@ -2,7 +2,7 @@ require 'date'
 require 'business_time'
 
 class MonthAccrualStrategy
-  def self.calculate(start_date, end_date, days, on)
+  def self.calculate(start_date, end_date, amount, on)
     end_of_month = on == 31
 
     number_of_accrual_dates = (start_date...end_date).select do |date|
@@ -13,7 +13,7 @@ class MonthAccrualStrategy
       end
     end.size
 
-    days * number_of_accrual_dates
+    amount * number_of_accrual_dates
   end
 end
 
@@ -23,19 +23,20 @@ class PtoCalculator
     end_date = options[:end_date]
     accrual_rule = options[:accrual_rule]
     accrued = 0
+    amount = accrual_rule[:days] || accrual_rule[:hours]
 
     if accrual_rule[:period] == :month
-      accrued = MonthAccrualStrategy.calculate(start_date, end_date, accrual_rule[:days], accrual_rule[:on])
+      accrued = MonthAccrualStrategy.calculate(start_date, end_date, amount, accrual_rule[:on])
     elsif accrual_rule[:period] == :week
       number_of_accrual_dates = (start_date...end_date).select do |date|
         date.send("#{accrual_rule[:on]}?")
       end.size
-      accrued = accrual_rule[:days] * number_of_accrual_dates
+      accrued = amount * number_of_accrual_dates
     elsif accrual_rule[:period] == :year
       number_of_accrual_dates = (start_date...end_date).select do |date|
         date.yday == accrual_rule[:on]
       end.size
-      accrued = accrual_rule[:days] * number_of_accrual_dates
+      accrued = amount * number_of_accrual_dates
     end
 
     (options[:balance] + accrued).round(2)
@@ -203,5 +204,35 @@ describe PtoCalculator do
     }
 
     expect(PtoCalculator.calculate(options)).to be_within(0.1).of(0)
+  end
+
+  it 'returns balance after one year with 1d per month accrual and start 1 day before accrual date' do
+    options = {
+      balance: 0,
+      start_date: Date.new(2019, 1, 14),
+      end_date: Date.new(2019, 12, 31),
+      accrual_rule: {
+        days: 1,
+        period: :month,
+        on: 15
+      }
+    }
+
+    expect(PtoCalculator.calculate(options)).to be_within(0.1).of(12)
+  end
+
+  it 'returns balance after one year with 8h per month accrual and start 1 day before accrual date' do
+    options = {
+      balance: 0,
+      start_date: Date.new(2019, 1, 14),
+      end_date: Date.new(2019, 12, 31),
+      accrual_rule: {
+        hours: 8,
+        period: :month,
+        on: 15
+      }
+    }
+
+    expect(PtoCalculator.calculate(options)).to be_within(0.1).of(8 * 12)
   end
 end

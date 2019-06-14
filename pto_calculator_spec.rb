@@ -1,47 +1,11 @@
 require 'date'
 require 'business_time'
-
-class MonthAccrualStrategy
-  def self.calculate(start_date, end_date, amount, on)
-    end_of_month = on == 31
-
-    number_of_accrual_dates = (start_date...end_date).select do |date|
-      if end_of_month
-        date == date.at_end_of_month
-      else
-        date.day == on
-      end
-    end.size
-
-    amount * number_of_accrual_dates
-  end
-end
-
-class PtoCalculator
-  def self.calculate(options)
-    start_date = options[:start_date]
-    end_date = options[:end_date]
-    accrual_rule = options[:accrual_rule]
-    accrued = 0
-    amount = accrual_rule[:days] || accrual_rule[:hours]
-
-    if accrual_rule[:period] == :month
-      accrued = MonthAccrualStrategy.calculate(start_date, end_date, amount, accrual_rule[:on])
-    elsif accrual_rule[:period] == :week
-      number_of_accrual_dates = (start_date...end_date).select do |date|
-        date.send("#{accrual_rule[:on]}?")
-      end.size
-      accrued = amount * number_of_accrual_dates
-    elsif accrual_rule[:period] == :year
-      number_of_accrual_dates = (start_date...end_date).select do |date|
-        date.yday == accrual_rule[:on]
-      end.size
-      accrued = amount * number_of_accrual_dates
-    end
-
-    (options[:balance] + accrued).round(2)
-  end
-end
+require File.join(File.dirname(__FILE__), 'pto_calculator')
+require File.join(File.dirname(__FILE__), 'accrual_strategies', 'accrual_strategy')
+require File.join(File.dirname(__FILE__), 'accrual_strategies', 'annual_accrual_strategy')
+require File.join(File.dirname(__FILE__), 'accrual_strategies', 'monthly_accrual_strategy')
+require File.join(File.dirname(__FILE__), 'accrual_strategies', 'weekly_accrual_strategy')
+require File.join(File.dirname(__FILE__), 'accrual_strategies', 'accrual_strategy_factory')
 
 describe PtoCalculator do
   it 'returns balance after a month without any accrual' do
@@ -235,4 +199,10 @@ describe PtoCalculator do
 
     expect(PtoCalculator.calculate(options)).to be_within(0.1).of(8 * 12)
   end
+
+  it 'maximum accrual'
+  it 'reset balance to X on date'
+  it 'adjust balance'
+  it 'increase balance by amount (reward PTO time)'
+  it 'decrease balance by amount (log PTO time)'
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'date'
 require 'business_time'
 require File.join(File.dirname(__FILE__), 'pto_calculator')

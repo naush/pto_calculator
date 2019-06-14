@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class MonthlyAccrualStrategy < AccrualStrategy
   def self.accrual_date?(date, on)
     end_of_month = on == 31

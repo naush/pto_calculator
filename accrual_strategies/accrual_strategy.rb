@@ -1,5 +1,7 @@
+# frozen_string_literal: true
+
 class AccrualStrategy
-  def self.accrual_date?(options)
+  def self.accrual_date?(_options)
     false
   end
 
